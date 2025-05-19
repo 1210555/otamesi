@@ -9,11 +9,14 @@
         "--login",
         "-i",
         "-c",
-        "cd '${fileDirname}' && g++ -std=c++17 '${file}' -o '${fileDirname}/${fileBasenameNoExtension}' && './${fileDirname}/${fileBasenameNoExtension}'"
+        "cd '${fileDirname}' && g++ -std=c++17 '${file}' -o '${fileDirname}/${fileBasenameNoExtension}' -I/ucrt64/include -L/ucrt64/lib -lsfml-graphics -lsfml-window -lsfml-system && './${fileDirname}/${fileBasenameNoExtension}'"
       ],
-      "group": "build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": ["$gcc"],
-      "detail": "ビルドして実行します（MSYS2 UCRT64）"
+      "detail": "SFML対応：ビルドして実行します（MSYS2 UCRT64）"
     },
     {
       "type": "cppbuild",
