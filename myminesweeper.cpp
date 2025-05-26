@@ -4,6 +4,7 @@
 #include<ctime>
 #include<cstdlib>
 #include<iomanip>
+#include <SFML/Graphics.hpp>
 
 #define NUMrow 5
 #define NUMcol 5

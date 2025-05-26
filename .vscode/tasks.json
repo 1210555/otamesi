@@ -2,14 +2,14 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build and Run C++ (UCRT64)",
+      "label": "Build and Run with SFML (UCRT64)",
       "type": "shell",
       "command": "C:\\msys64\\usr\\bin\\bash.exe",
       "args": [
         "--login",
         "-i",
         "-c",
-        "cd '${fileDirname}' && g++ -std=c++17 '${file}' -o '${fileDirname}/${fileBasenameNoExtension}' -I/ucrt64/include -L/ucrt64/lib -lsfml-graphics -lsfml-window -lsfml-system && './${fileDirname}/${fileBasenameNoExtension}'"
+        "cd '${fileDirname}' && g++ -std=c++17 '${file}' -o '${fileBasenameNoExtension}' -I/ucrt64/include -I/ucrt64/include/SFML -L/ucrt64/lib -lsfml-graphics -lsfml-window -lsfml-system -lsfml-main && './${fileBasenameNoExtension}'"
       ],
       "group": {
         "kind": "build",

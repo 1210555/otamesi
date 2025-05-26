@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "C:/msys64/ucrt64/include",
+        "C:/msys64/ucrt64/include/c++/15.1.0", // 追加①：GCCの標準ヘッダー
+        "C:/msys64/ucrt64/include/c++/15.1.0/x86_64-w64-mingw32", // 追加②：ターゲット依存ヘッダー
+        "C:/msys64/ucrt64/include/SFML"
+      ],
+
+      "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
+      "defines": ["_DEBUG", "UNICODE", "_UNICODE"],
+      "windowsSdkVersion": "10.0.19041.0",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-gcc-x64"
+    }
+  ],
+  "version": 4
+}
