@@ -2,42 +2,23 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build and Run with SFML (UCRT64)",
+      "label": "Build SFML Project",
       "type": "shell",
-      "command": "C:/msys64/usr/bin/bash.exe",
+      "command": "g++",
       "args": [
-        "--login",
-        "-i",
-        "-c",
-        "cd /c/Users/syu12/ProjectMine && g++ -std=c++17 myminesweeper.cpp -o MyMineSweeper -I/ucrt64/include -I/ucrt64/include/SFML -L/ucrt64/lib -lsfml-graphics -lsfml-window -lsfml-system -lsfml-main && ./MyMineSweeper"
-      ],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "problemMatcher": ["$gcc"],
-      "detail": "SFML対応：ビルドして実行します（MSYS2 UCRT64）"
-    }
-    /*{
-      "type": "cppbuild",
-      "label": "C/C++: g++.exe アクティブなファイルのビルド",
-      "command": "C:/msys64/ucrt64/bin/g++.exe",
-      "args": [
-        "-fdiagnostics-color=always",
-        "-g",
-        "${file}",
+        "-std=c++17",
+        "myminesweeper.cpp",
         "-o",
-        "${fileDirname}\\${fileBasenameNoExtension}.exe"
+        "myminesweeper",
+        "-lsfml-graphics",
+        "-lsfml-window",
+        "-lsfml-system"
       ],
-      "options": {
-        "cwd": "C:/msys64/ucrt64/bin"
-      },
-      "problemMatcher": ["$gcc"],
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "detail": "デバッガーによって生成されたタスク。"
-    }*/
+      "problemMatcher": ["$gcc"]
+    }
   ]
 }
