@@ -2,23 +2,23 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build SFML Project",
       "type": "shell",
+      "label": "C++: Build with SFML",
       "command": "g++",
       "args": [
-        "-std=c++17",
-        "myminesweeper.cpp",
+        "-g",
+        "MyMineSweeper.cpp",
         "-o",
-        "myminesweeper",
+        "MyMineSweeper.exe",
         "-lsfml-graphics",
         "-lsfml-window",
         "-lsfml-system"
       ],
-      "group": {
-        "kind": "build",
-        "isDefault": true
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
-      "problemMatcher": ["$gcc"]
+      "problemMatcher": ["$gcc"],
+      "group": "build"
     }
   ]
 }
