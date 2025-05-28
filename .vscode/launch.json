@@ -2,13 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug SFML App",
+      "name": "Launch MyMineSweeper",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/MyMineSweeper.exe",
+      "program": "${fileDirname}/myminesweeper.exe",
       "args": [],
       "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
+      "cwd": "${fileDirname}",
       "environment": [],
       "externalConsole": true,
       "MIMode": "gdb",
