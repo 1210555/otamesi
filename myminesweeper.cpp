@@ -11,6 +11,12 @@
 #define NUMmine 3
 using namespace std;
 
+enum class GameState {
+    Playing,
+    GameOver,
+    Win
+};
+
 class Field{
     private:
     vector<vector<bool>> Mine;
@@ -169,9 +175,138 @@ class Field{
     }
 };
 
+class Tile{
+        // SFMLを使ったグラフィックスの実装はここに追加できます。
+        // ただし、SFMLのセットアップとウィンドウの管理が必要です。
+        private:
+        map<string,sf::Texture> textures;
+        vector<vector<bool>> Mine;
+        GameState state;
+
+        public:
+        Field field;
+        bool isMine=false;
+        bool isOpen=false;
+        bool isFlagged=false;
+
+        Tile(){
+            Mine=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
+        }
+        
+        void Yomikomi(){
+            map<string,string> files={
+                {"blue","resources/GroundBlue.jpg"},
+                {"white","resources/GroundWhite.jpg"},
+                {"mine","resources/Mine.jpg"},
+                {"flag","resources/Flag.jpg"},
+                {"boom","resources/Boom.jpg"}
+            };
+
+            
+
+            // テクスチャの読み込みとエラーチェック
+            for(const auto& [key,path] : files){
+                sf::Texture texture;
+                if(!texture.loadFromFile(path)){
+                    cerr << "Error loading texture: " << path << endl;
+                    return;
+                }
+                textures.emplace(key, move(texture));
+            }
+        }
+
+        void display(){
+            Yomikomi();
+            field.minePlace();
+            sf::RenderWindow window(sf::VideoMode(NUMrow * 100, NUMcol * 100), "MineSweeper");
+            int tileSize = 100; 
+
+            //フォントの読み込み
+            sf::Font font;
+            if (!font.loadFromFile("resources/arial.ttf")) {
+                cerr << "Error loading font" << endl;
+                return;
+            }
+            vector<vector<bool>> opened(NUMrow, vector<bool>(NUMcol, false));
+
+            while (window.isOpen()) {
+            sf::Event event;
+            while (window.pollEvent(event)) {
+                if (event.type == sf::Event::Closed){
+                    window.close();
+                }
+                if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                    int x = mousePos.x / tileSize;
+                    int y = mousePos.y / tileSize;
+
+            if (x >= 0 && x < NUMcol && y >= 0 && y < NUMrow) {
+                opened[y][x] = true;
+            }
+        }
+            window.clear();
+            for(int i=0;i<NUMrow;i++){
+                for(int j=0;j<NUMcol;j++){
+                    sf::Sprite sprite;
+                    sf::RectangleShape tile(sf::Vector2f(tileSize - 2, tileSize - 2));
+                    tile.setPosition(j * tileSize, i * tileSize);
+                    tile.setFillColor( sf::Color(200,200,200));
+                    window.draw(tile);
+
+                    if(opened[i][j]){
+                        if(field.MINE(i,j)){
+                            state = GameState::GameOver;
+                            if(state== GameState::GameOver){
+                        sprite.setTexture(textures["mine"]);
+                        GameOver(i,j);
+                        window.draw(sprite);
+                            }
+                        }
+                    }else{
+                            int count = field.Count(i, j);
+                            if(count >= 0){
+                            sf::Text text;
+                            text.setFont(font);
+                            text.setString(to_string(field.Count(i,j)));
+                            text.setCharacterSize(24);
+                            text.setFillColor(sf::Color::Blue);
+                            text.setPosition(j * tileSize + 15, i * tileSize + 10);
+                            window.draw(text);
+                            }
+                        }
+                        window.draw(sprite);
+                    }
+                    // ここでspriteの位置を設定する必要があります。
+                    // 例えば、sprite.setPosition(j * tileWidth, i * tileHeight);
+                    // tileWidthとtileHeightはタイルのサイズです。
+                }
+            }
+            window.display();
+        }
+    }
+        //window.close();
+            void GameOver(int i,int j){
+                sf::Sprite sprite;
+                            // ここでタイルのサイズを設定します。
+                int tileSize = 50; // タイルのサイズを50x50に設定
+                            // 画像を読み込んでスプライトに設定
+                sprite.setTexture( textures["boom"]);
+                            sf::Vector2u textureSize = textures["boom"].getSize(); // 元の画像サイズ
+                            float scaleX = tileSize / static_cast<float>(textureSize.x);
+                            float scaleY = tileSize / static_cast<float>(textureSize.y);
+                            sprite.setScale(scaleX, scaleY);
+                            sprite.setPosition(j * tileSize, i * tileSize);
+                            
+                            cout << "Boom! You hit a mine at (" << i + 1 << ", " << j + 1 << ")." << endl;//デバッグ用
+
+            }
+        
+        };
+
     class Game{
         private:
         Field field;
+        Tile tile;
 
         public:
         int start(int row,int col,int mine){
@@ -184,6 +319,8 @@ class Field{
             
             field.minePlace();
             field.Board();
+            tile.Yomikomi(); // タイルの読み込み
+           // tile.display(); // タイルの表示
 
             while(1){
                 cout<<"Please input a command (o/f) : ";
@@ -238,11 +375,14 @@ class Field{
             return 0;
         }
     };
+    
 
     int main(){
         srand(time(0));
-        Game game;
-        game.start(NUMrow,NUMcol,NUMmine);
+        Tile tile;
+        tile.display(); // タイルの表示を開始
+       // Game game;
+       // game.start(NUMrow,NUMcol,NUMmine);
 
         return 0;
     }
