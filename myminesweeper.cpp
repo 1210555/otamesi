@@ -6,8 +6,8 @@
 #include<iomanip>
 #include <SFML/Graphics.hpp>
 
-#define NUMrow 5
-#define NUMcol 5
+#define NUMrow 10
+#define NUMcol 10
 #define NUMmine 3
 using namespace std;
 
@@ -131,6 +131,7 @@ class Field{
                 if(nx>=0&&nx<NUMrow&&ny>=0&&ny<NUMcol){
                     if(!open[nx][ny]&&!frag[nx][ny]){
                         if(Count(nx,ny)==0){
+
                         autoOpen+=AutoRelease(nx,ny);
                     }else{
                         Open(nx,ny);
@@ -173,64 +174,97 @@ class Field{
             cout<<endl;
         }
     }
+    
 };
 
 class Tile{
         // SFMLを使ったグラフィックスの実装はここに追加できます。
         // ただし、SFMLのセットアップとウィンドウの管理が必要です。
-        private:
+    private:
         map<string,sf::Texture> textures;
         vector<vector<bool>> Mine;
         GameState state;
 
-        public:
+    public:
         Field field;
         bool isMine=false;
         bool isOpen=false;
         bool isFlagged=false;
-
-        Tile(){
-            Mine=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
-        }
         
-        void Yomikomi(){
-            map<string,string> files={
-                {"blue","resources/GroundBlue.jpg"},
-                {"white","resources/GroundWhite.jpg"},
-                {"mine","resources/Mine.jpg"},
-                {"flag","resources/Flag.jpg"},
-                {"boom","resources/Boom.jpg"}
-            };
+
+    Tile(){
+        Mine=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
+    }
+        
+    void Yomikomi(){
+        state = GameState::Playing;
+        map<string,string> files={
+            {"blue","resources/GroundBlue.jpg"},
+            {"white","resources/GroundWhite.jpg"},
+            {"mine","resources/Mine.jpg"},
+            {"flag","resources/Flag.jpg"},                {"boom","resources/Boom.jpg"}
+        };
 
             
 
             // テクスチャの読み込みとエラーチェック
-            for(const auto& [key,path] : files){
-                sf::Texture texture;
-                if(!texture.loadFromFile(path)){
-                    cerr << "Error loading texture: " << path << endl;
-                    return;
-                }
-                textures.emplace(key, move(texture));
-            }
-        }
-
-        void display(){
-            Yomikomi();
-            field.minePlace();
-            sf::RenderWindow window(sf::VideoMode(NUMrow * 100, NUMcol * 100), "MineSweeper");
-            int tileSize = 100; 
-
-            //フォントの読み込み
-            sf::Font font;
-            if (!font.loadFromFile("resources/arial.ttf")) {
-                cerr << "Error loading font" << endl;
+        for(const auto& [key,path] : files){
+            sf::Texture texture;
+            if(!texture.loadFromFile(path)){                    cerr << "Error loading texture: " << path << endl;
                 return;
             }
-            vector<vector<bool>> opened(NUMrow, vector<bool>(NUMcol, false));
+            textures.emplace(key, move(texture));
+        }
+    }
+    int autoRelease(int x, int y,vector<vector<bool>>& opened) {    
+        int OpenCount=1;    
+        if(x<0||x>=NUMrow||y<0||y>=NUMcol){
+            return 0; 
+        }
+        if(opened[x][y]){
+            return 0;// すでに開いているかのチェック
+        }
+        opened[x][y] = true;
+        if(field.MINE(x,y)){
+            return 0;// 地雷があるかどうかのチェック
+        }
+        if(field.Count(x,y)!=0){
+            return OpenCount;
+        }
+    
+        int dx[8]= {-1,-1,-1,0,0,1,1,1};
+        int dy[8]= {-1,0,1,-1,1,-1,0,1};
 
-            while (window.isOpen()) {
-            sf::Event event;
+        for(int k=0;k<8;k++){
+            int nx=x+dx[k];
+            int ny=y+dy[k];
+            if(nx>=0&&nx<NUMrow&&ny>=0&&ny<NUMcol){
+                if(!opened[nx][ny]){
+                    OpenCount+=autoRelease(nx, ny, opened);
+                    autoRelease(nx,ny,opened);
+                }
+            }
+        }
+        return OpenCount;
+    }
+
+    void display(){
+        Yomikomi();
+        field.minePlace();
+        sf::RenderWindow window(sf::VideoMode(NUMrow * 50, NUMcol * 50), "MineSweeper");
+        int tileSize = 50; 
+        int TotalPlace=NUMrow*NUMcol;
+        int SafePlace=TotalPlace-NUMmine;
+        int OpenNumber=0;
+        vector<vector<bool>> opened(NUMrow, vector<bool>(NUMcol, false));
+        sf::Font font;
+        if (!font.loadFromFile("resources/arial.ttf")) {
+            cerr << "Error loading font" << endl;
+            return;
+        }
+            
+        while (window.isOpen()) {
+        sf::Event event;        
             while (window.pollEvent(event)) {
                 if (event.type == sf::Event::Closed){
                     window.close();
@@ -239,11 +273,22 @@ class Tile{
                     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
                     int x = mousePos.x / tileSize;
                     int y = mousePos.y / tileSize;
+                    cout<< "Clicked at: (" << x << ", " << y << ")" << endl;
 
-            if (x >= 0 && x < NUMcol && y >= 0 && y < NUMrow) {
-                opened[y][x] = true;
+                    if (x >= 0 && x < NUMcol && y >= 0 && y < NUMrow) {
+                        
+                        if(field.MINE(y,x)){
+                            state = GameState::GameOver;
+                        }else{
+                            OpenNumber+=autoRelease(y, x, opened);
+                            cout << "OpenNumber: " << OpenNumber << endl; // デバッグ用
+                            if(SafePlace==OpenNumber){
+                                state= GameState::Win;
+                            }
+                        }
+                    }
+                }
             }
-        }
             window.clear();
             for(int i=0;i<NUMrow;i++){
                 for(int j=0;j<NUMcol;j++){
@@ -253,16 +298,20 @@ class Tile{
                     tile.setFillColor( sf::Color(200,200,200));
                     window.draw(tile);
 
-                    if(opened[i][j]){
-                        if(field.MINE(i,j)){
-                            state = GameState::GameOver;
-                            if(state== GameState::GameOver){
-                        sprite.setTexture(textures["mine"]);
-                        GameOver(i,j);
+                    if(state==GameState::GameOver && field.MINE(i,j)){
+                        sprite.setTexture(textures["boom"]);
+                        sf::Vector2u textureSize = textures["boom"].getSize(); // 元の画像サイズ
+                        float scaleX = tileSize / static_cast<float>(textureSize.x);
+                        float scaleY = tileSize / static_cast<float>(textureSize.y);
+                        sprite.setScale(scaleX, scaleY);
+                        sprite.setPosition(j * tileSize, i * tileSize);
                         window.draw(sprite);
-                            }
-                        }
-                    }else{
+                        cout<< "Boom! You hit a mine at (" << i + 1 << ", " << j + 1 << ")." << endl; // デバッグ用
+                    }else if(state==GameState::Win && !field.MINE(i,j)){
+
+                    }else if(opened[i][j]){
+                        if(!field.MINE(i,j)){
+                            //周囲の地雷数表示
                             int count = field.Count(i, j);
                             if(count >= 0){
                             sf::Text text;
@@ -274,34 +323,17 @@ class Tile{
                             window.draw(text);
                             }
                         }
-                        window.draw(sprite);
                     }
-                    // ここでspriteの位置を設定する必要があります。
-                    // 例えば、sprite.setPosition(j * tileWidth, i * tileHeight);
-                    // tileWidthとtileHeightはタイルのサイズです。
                 }
             }
-            window.display();
+                window.display();
         }
-    }
+    }    
+};
         //window.close();
-            void GameOver(int i,int j){
-                sf::Sprite sprite;
-                            // ここでタイルのサイズを設定します。
-                int tileSize = 50; // タイルのサイズを50x50に設定
-                            // 画像を読み込んでスプライトに設定
-                sprite.setTexture( textures["boom"]);
-                            sf::Vector2u textureSize = textures["boom"].getSize(); // 元の画像サイズ
-                            float scaleX = tileSize / static_cast<float>(textureSize.x);
-                            float scaleY = tileSize / static_cast<float>(textureSize.y);
-                            sprite.setScale(scaleX, scaleY);
-                            sprite.setPosition(j * tileSize, i * tileSize);
-                            
-                            cout << "Boom! You hit a mine at (" << i + 1 << ", " << j + 1 << ")." << endl;//デバッグ用
 
-            }
         
-        };
+        
 
     class Game{
         private:
