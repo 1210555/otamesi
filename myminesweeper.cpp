@@ -6,8 +6,8 @@
 #include<iomanip>
 #include <SFML/Graphics.hpp>
 
-#define NUMrow 10
-#define NUMcol 10
+#define NUMrow 5
+#define NUMcol 5
 #define NUMmine 3
 using namespace std;
 
@@ -46,7 +46,7 @@ class Field{
             cout<<"( "<<mineRow+1<<","<<mineCol+1<<" )"<<endl;//デバック用
         }
     }
-    void Board(){
+    /*void Board(){
         cout<<"    ";
         for(int k=0;k<NUMcol;k++){
             cout<<setw(3)<<k+1;
@@ -63,11 +63,11 @@ class Field{
             }
             cout<<endl;
         }
-    }
+    }*/
     bool MINE(int x,int y){
         return Mine[x][y];//start内で入力したx,yの位置を返す
     }//二次元配列作ってるのはFieldだけだからクラス間の受け渡しが必要（二次元配列をGame内でもつくればこの関数はいらない）
-//地雷数カウント
+    //地雷数カウント
     int Count(int x,int y){
         int AroundMineCount=0;
         int nx,ny;
@@ -183,6 +183,7 @@ class Tile{
     private:
         map<string,sf::Texture> textures;
         vector<vector<bool>> Mine;
+        vector<vector<bool>> flagged;
         GameState state;
 
     public:
@@ -194,23 +195,24 @@ class Tile{
 
     Tile(){
         Mine=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
+        flagged=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
     }
-        
+
     void Yomikomi(){
         state = GameState::Playing;
         map<string,string> files={
             {"blue","resources/GroundBlue.jpg"},
             {"white","resources/GroundWhite.jpg"},
             {"mine","resources/Mine.jpg"},
-            {"flag","resources/Flag.jpg"},                {"boom","resources/Boom.jpg"}
+            {"flag","resources/Flag2.png"},
+            {"boom","resources/Boom.jpg"}
         };
-
-            
 
             // テクスチャの読み込みとエラーチェック
         for(const auto& [key,path] : files){
             sf::Texture texture;
-            if(!texture.loadFromFile(path)){                    cerr << "Error loading texture: " << path << endl;
+            if(!texture.loadFromFile(path)){
+                cerr << "Error loading texture: " << path << endl;
                 return;
             }
             textures.emplace(key, move(texture));
@@ -241,7 +243,7 @@ class Tile{
             if(nx>=0&&nx<NUMrow&&ny>=0&&ny<NUMcol){
                 if(!opened[nx][ny]){
                     OpenCount+=autoRelease(nx, ny, opened);
-                    autoRelease(nx,ny,opened);
+                    //autoRelease(nx,ny,opened);おそらくいらないうまくいきそうなら消しとく
                 }
             }
         }
@@ -269,6 +271,7 @@ class Tile{
                 if (event.type == sf::Event::Closed){
                     window.close();
                 }
+                //左クリックの処理
                 if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
                     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
                     int x = mousePos.x / tileSize;
@@ -276,15 +279,38 @@ class Tile{
                     cout<< "Clicked at: (" << x << ", " << y << ")" << endl;
 
                     if (x >= 0 && x < NUMcol && y >= 0 && y < NUMrow) {
-                        
-                        if(field.MINE(y,x)){
+                        if(flagged[y][x]){
+                            continue;
+                        }else if(field.MINE(y,x)){
                             state = GameState::GameOver;
+                            for(int i = 0; i < NUMrow; i++){
+                                for(int j = 0; j < NUMcol; j++){
+                                    opened[i][j] = true;
+                                }
+                            }
                         }else{
                             OpenNumber+=autoRelease(y, x, opened);
                             cout << "OpenNumber: " << OpenNumber << endl; // デバッグ用
                             if(SafePlace==OpenNumber){
                                 state= GameState::Win;
+                                for(int i = 0; i < NUMrow; i++){
+                                    for(int j = 0; j < NUMcol; j++){
+                                        opened[i][j] = true;
+                                    }
+                                }
                             }
+                        }
+                    }
+                //右クリックの処理
+                }else if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right){
+                    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                    sf::Sprite sprite;
+                    int x = mousePos.x / tileSize;
+                    int y = mousePos.y / tileSize;
+                    cout<< "Flagged at: (" << x << ", " << y << ")" << endl;
+                    if (x >= 0 && x < NUMcol && y >= 0 && y < NUMrow) {
+                        if(!opened[y][x]){ // まだ開いていないタイルに対してフラグを設定
+                            flagged[y][x]=!flagged[y][x]; //フラグをつけると外す
                         }
                     }
                 }
@@ -308,7 +334,17 @@ class Tile{
                         window.draw(sprite);
                         cout<< "Boom! You hit a mine at (" << i + 1 << ", " << j + 1 << ")." << endl; // デバッグ用
                     }else if(state==GameState::Win && !field.MINE(i,j)){
+                                            sf::Text wintext;
+                    wintext.setFont(font);
+                    wintext.setString("You win!");
+                    wintext.setCharacterSize(48);
+                    wintext.setFillColor(sf::Color::Black);
 
+                    sf::FloatRect textRect = wintext.getLocalBounds();
+                    wintext.setOrigin(textRect.left + textRect.width / 2.0f,
+                    textRect.top + textRect.height / 2.0f);
+                    wintext.setPosition(NUMcol * tileSize / 2.0f, NUMrow * tileSize / 2.0f);
+                    window.draw(wintext);
                     }else if(opened[i][j]){
                         if(!field.MINE(i,j)){
                             //周囲の地雷数表示
@@ -323,6 +359,14 @@ class Tile{
                             window.draw(text);
                             }
                         }
+                    }else if(flagged[i][j]){
+                        sprite.setTexture(textures["flag"]);
+                        sf::Vector2u textureSize = textures["flag"].getSize(); // 元の画像サイズ
+                        float scaleX = tileSize / static_cast<float>(textureSize.x);
+                        float scaleY = tileSize / static_cast<float>(textureSize.y);
+                        sprite.setScale(scaleX, scaleY);
+                        sprite.setPosition(j * tileSize, i * tileSize);
+                        window.draw(sprite);
                     }
                 }
             }
@@ -335,7 +379,7 @@ class Tile{
         
         
 
-    class Game{
+    /*class Game{
         private:
         Field field;
         Tile tile;
@@ -350,7 +394,7 @@ class Tile{
             int count;
             
             field.minePlace();
-            field.Board();
+            //field.Board();
             tile.Yomikomi(); // タイルの読み込み
            // tile.display(); // タイルの表示
 
@@ -406,7 +450,7 @@ class Tile{
             }
             return 0;
         }
-    };
+    };*/
     
 
     int main(){
