@@ -19,54 +19,32 @@ enum class GameState {
 
 class Field{
     private:
-    vector<vector<bool>> Mine;
-    vector<vector<string>> board;
+    vector<vector<bool>> mine;
     vector<vector<bool>> open;
     vector<vector<bool>> frag;
-    vector<vector<string>> displayMine;
+  
 
     public:
     Field(){
         open=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
         frag=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
-        Mine=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
-        board=vector<vector<string>>(NUMrow,vector<string>(NUMcol,"*"));
-        displayMine=vector<vector<string>>(NUMrow,vector<string>(NUMcol,"*"));
-
+        mine=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
     }
     void minePlace(){
         int k=0;
         while(k<NUMmine){
             int mineRow=rand()%NUMrow;
             int mineCol=rand()%NUMcol;
-            if(!Mine[mineRow][mineCol]){
-                Mine[mineRow][mineCol]=true;
+            if(!mine[mineRow][mineCol]){
+                mine[mineRow][mineCol]=true;
                 k++;
             }
-            cout<<"( "<<mineRow+1<<","<<mineCol+1<<" )"<<endl;//デバック用
+            cout<<"( "<<mineRow+1<<","<<mineCol+1<<" )"<<endl;//地雷の位置（デバック用）
         }
     }
-    /*void Board(){
-        cout<<"    ";
-        for(int k=0;k<NUMcol;k++){
-            cout<<setw(3)<<k+1;
+    bool Mine(int x,int y){
+        return mine[x][y];
         }
-        cout<<endl<<"   ";
-        for(int k=0;k<NUMcol;k++){
-            cout<<"---";
-        }
-        cout<<"-"<<endl;
-        for(int i=0;i<NUMrow;i++){
-            cout<<setw(2)<<i+1<<" |";
-            for(int j=0;j<NUMcol;j++){
-                cout<<setw(3)<<board[i][j];
-            }
-            cout<<endl;
-        }
-    }*/
-    bool MINE(int x,int y){
-        return Mine[x][y];//start内で入力したx,yの位置を返す
-    }//二次元配列作ってるのはFieldだけだからクラス間の受け渡しが必要（二次元配列をGame内でもつくればこの関数はいらない）
     //地雷数カウント
     int Count(int x,int y){
         int AroundMineCount=0;
@@ -78,20 +56,12 @@ class Field{
             nx=x+dx[k];
             ny=y+dy[k];
             if(nx>=0&&nx<NUMrow&&ny>=0&&ny<NUMcol){//&の時はどれか一つ満たせばよい
-                if(Mine[nx][ny]){//地雷があるならif文にはいる
+                if(mine[nx][ny]){//地雷があるならif文にはいる
                     AroundMineCount++;
                 }
             }
         }
         return AroundMineCount;
-    }
-    string ChangeCount(int x,int y){
-        board[x][y]=to_string(Count(x,y));
-        return board[x][y];
-    }
-    string ChangeFrag(int x,int y){
-        board[x][y]="F";
-        return board[x][y];
     }
     void Open(int x,int y){
         open[x][y]=true;
@@ -101,11 +71,6 @@ class Field{
     }
     void Frag(int x,int y){
         frag[x][y]=true;
-    }
-    string CancelFrag(int x,int y){
-        board[x][y]="*";//ちょっと強引かも
-        frag[x][y]=false;
-        return board[x][y];
     }
     bool Fragged(int x,int y){
         return frag[x][y];
@@ -121,10 +86,9 @@ class Field{
             return 0;
         }
         Open(x,y);
-        board[x][y]=to_string(Count(x,y));
         int autoOpen=1;
 
-        if(Count(x,y)==0 && !Mine[x][y]){
+        if(Count(x,y)==0 && !mine[x][y]){
             for(int k=0;k<8;k++){
                 int nx=x+dx[k];
                 int ny=y+dy[k];
@@ -135,7 +99,6 @@ class Field{
                         autoOpen+=AutoRelease(nx,ny);
                     }else{
                         Open(nx,ny);
-                        board[nx][ny]=to_string(Count(nx,ny));
                         autoOpen++;
                         }
                     }
@@ -144,45 +107,24 @@ class Field{
         }
         return autoOpen;
     }
-    void openMine(int x,int y){
-
-        for(int i=0;i<NUMrow;i++){
-            for(int j=0;j<NUMcol;j++){
-                if(Mine[i][j]){
-                    displayMine[i][j]="X";
-                }else{
-                    displayMine[i][j]=to_string(Count(i,j));
-                }
-            }
-        }
-
-
-        cout<<"    ";
-        for(int k=0;k<NUMcol;k++){
-            cout<<setw(3)<<k+1;
-        }
-        cout<<endl<<"   ";
-        for(int k=0;k<NUMcol;k++){
-            cout<<"---";
-        }
-        cout<<"-"<<endl;
-        for(int i=0;i<NUMrow;i++){
-            cout<<setw(2)<<i+1<<" |";
-            for(int j=0;j<NUMcol;j++){
-                cout<<setw(3)<<displayMine[i][j];
-            }
-            cout<<endl;
-        }
-    }
-    
 };
+
+class Load{
+};
+
+class GameUI{
+
+};
+
+
+
 
 class Tile{
         // SFMLを使ったグラフィックスの実装はここに追加できます。
         // ただし、SFMLのセットアップとウィンドウの管理が必要です。
     private:
         map<string,sf::Texture> textures;
-        vector<vector<bool>> Mine;
+        vector<vector<bool>> mine;
         vector<vector<bool>> flagged;
         GameState state;
 
@@ -194,7 +136,7 @@ class Tile{
         
 
     Tile(){
-        Mine=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
+        mine=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
         flagged=vector<vector<bool>>(NUMrow,vector<bool>(NUMcol,false));
     }
 
@@ -227,7 +169,7 @@ class Tile{
             return 0;// すでに開いているかのチェック
         }
         opened[x][y] = true;
-        if(field.MINE(x,y)){
+        if(field.Mine(x,y)){
             return 0;// 地雷があるかどうかのチェック
         }
         if(field.Count(x,y)!=0){
@@ -281,7 +223,7 @@ class Tile{
                     if (x >= 0 && x < NUMcol && y >= 0 && y < NUMrow) {
                         if(flagged[y][x]){
                             continue;
-                        }else if(field.MINE(y,x)){
+                        }else if(field.Mine(y,x)){
                             state = GameState::GameOver;
                             for(int i = 0; i < NUMrow; i++){
                                 for(int j = 0; j < NUMcol; j++){
@@ -324,7 +266,7 @@ class Tile{
                     tile.setFillColor( sf::Color(200,200,200));
                     window.draw(tile);
 
-                    if(state==GameState::GameOver && field.MINE(i,j)){
+                    if(state==GameState::GameOver && field.Mine(i,j)){
                         sprite.setTexture(textures["boom"]);
                         sf::Vector2u textureSize = textures["boom"].getSize(); // 元の画像サイズ
                         float scaleX = tileSize / static_cast<float>(textureSize.x);
@@ -333,7 +275,7 @@ class Tile{
                         sprite.setPosition(j * tileSize, i * tileSize);
                         window.draw(sprite);
                         cout<< "Boom! You hit a mine at (" << i + 1 << ", " << j + 1 << ")." << endl; // デバッグ用
-                    }else if(state==GameState::Win && !field.MINE(i,j)){
+                    }else if(state==GameState::Win && !field.Mine(i,j)){
                                             sf::Text wintext;
                     wintext.setFont(font);
                     wintext.setString("You win!");
@@ -346,7 +288,7 @@ class Tile{
                     wintext.setPosition(NUMcol * tileSize / 2.0f, NUMrow * tileSize / 2.0f);
                     window.draw(wintext);
                     }else if(opened[i][j]){
-                        if(!field.MINE(i,j)){
+                        if(!field.Mine(i,j)){
                             //周囲の地雷数表示
                             int count = field.Count(i, j);
                             if(count >= 0){
@@ -374,91 +316,16 @@ class Tile{
         }
     }    
 };
-        //window.close();
 
-        
-        
-
-    /*class Game{
-        private:
-        Field field;
-        Tile tile;
-
-        public:
-        int start(int row,int col,int mine){
-            char command;
-            int x,y;
-            int totalPlace=row*col;
-            int safePlace=totalPlace-mine;
-            int openNumber=0;
-            int count;
-            
-            field.minePlace();
-            //field.Board();
-            tile.Yomikomi(); // タイルの読み込み
-           // tile.display(); // タイルの表示
-
-            while(1){
-                cout<<"Please input a command (o/f) : ";
-                cin>>command;
-                if(command!='o'&&command!='f'){
-                    cout<<"Please input 'o'or'f'"<<endl;
-                    continue;
-                }
-                cout<<"Please input a row and a col : ";
-                cin>>x>>y;
-                x--;
-                y--;
-                if(x<0||x>=row||y<0||y>=col){
-                    cout<<"Please input '1 ~ "<<NUMrow<<"'."<<endl;
-                    continue;
-                }
-                if(command=='o'){
-                    if(field.Fragged(x,y)){
-                        cout<<"This place is already fragged."<<endl;
-                        continue;
-                    }else if(field.MINE(x,y)){
-                        field.openMine(x,y);
-                        cout<<"Boom You lost."<<endl;
-                        break;
-                    }else if(field.Opened(x,y)){//同じ座標を入力したときこのif文内にはいりcontinueで戻る
-                        cout<<"This place is already opened."<<endl;
-                        continue;
-                    }else if(field.Count(x,y)==0){
-                        openNumber+=field.AutoRelease(x,y);
-                    }else{
-                        field.Open(x,y);
-                        field.ChangeCount(x,y);
-                        openNumber++;
-                    }
-                }
-                if(command=='f'){
-                    if(field.Fragged(x,y)){
-                        field.CancelFrag(x,y);
-                    }else{
-                        field.Frag(x,y);
-                        field.ChangeFrag(x,y);
-                    }
-                }
-                if(safePlace==openNumber){
-                    field.openMine(x,y);
-                    cout<<"Clear!"<<endl;
-                    break;
-                }
-                field.Board();
-                cout<<"("<<safePlace<<" , "<<openNumber<<")"<<endl;//デバック用
-            }
-            return 0;
-        }
-    };*/
-    
+class Game{
+    void Run(){
+    }
+};
 
     int main(){
         srand(time(0));
         Tile tile;
         tile.display(); // タイルの表示を開始
-       // Game game;
-       // game.start(NUMrow,NUMcol,NUMmine);
 
         return 0;
     }
