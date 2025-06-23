@@ -123,15 +123,11 @@ class Field{
 class Output{
     private:
     map<string,sf::Texture> textures;
-    //Field field;
-    vector<vector<bool>> flagged = vector<vector<bool>>(NUMrow, vector<bool>(NUMcol, false));
-    vector<vector<bool>> opened = vector<vector<bool>>(NUMrow, vector<bool>(NUMcol, false));
     int UIOffset; // UIのオフセット値
     
     public:
     Output(int offset):UIOffset(offset){
     map<string,string> files={
-            {"blue","resources/GroundBlue.jpg"},
             {"white","resources/GroundWhite.jpg"},
             {"mine","resources/Mine.jpg"},
             {"flag","resources/Flag2.png"},
@@ -166,7 +162,7 @@ class Output{
                         float scaleX = tileSize / static_cast<float>(textureSize.x);
                         float scaleY = tileSize / static_cast<float>(textureSize.y);
                         sprite.setScale(scaleX, scaleY);
-                        sprite.setPosition(j * tileSize, i * tileSize);
+                        sprite.setPosition(j * tileSize, i * tileSize + UIOffset);
                         window.draw(sprite);
                         cout<< "Boom! You hit a mine at (" << i + 1 << ", " << j + 1 << ")." << endl; // デバッグ用
                     }
@@ -186,7 +182,6 @@ class Output{
                 }else{
                     if (flagged[i][j]) {
                     // フラグ表示
-                    //cout << "Flag placed at (" << i + 1 << ", " << j + 1 << ")." << endl; // デバッグ用
                         sprite.setTexture(textures["flag"]);
                         sf::Vector2u textureSize = textures["flag"].getSize();
                         float scaleX = tileSize / static_cast<float>(textureSize.x);
@@ -234,7 +229,6 @@ class GameUI{
     sf::Text rightInstructionText;
     sf::Text gameOverText;
     sf::Text winText;
-    Field field;
     int windowWidth; // ウィンドウの幅
     int windowHeight; // ウィンドウの高さ
     int UIOffset; // UIのオフセット値
@@ -260,7 +254,8 @@ class GameUI{
         gameOverText.setFillColor(sf::Color::Red);
 
         sf::FloatRect goRect = gameOverText.getLocalBounds();
-        gameOverText.setOrigin(goRect.left + goRect.width / 2.0f, goRect.top + goRect.height / 2.0f);
+        cout<<"goRect.left is "<<goRect.left<<" , goRect.width is "<<goRect.width<<endl;
+        gameOverText.setOrigin(goRect.width / 2.0f, goRect.top + goRect.height / 2.0f);
         gameOverText.setPosition(windowWidth / 2.0f, (windowHeight - UIOffset) / 2.0f + UIOffset);
 
         winText.setFont(Font);
@@ -269,8 +264,8 @@ class GameUI{
         winText.setFillColor(sf::Color::Green);
 
         sf::FloatRect winRect = winText.getLocalBounds();
-        winText.setOrigin(winRect.left + winRect.width / 2.0f, winRect.top + winRect.height / 2.0f);
-        winText.setPosition(windowWidth / 2.0f, windowHeight / 2.0f);
+        winText.setOrigin(winRect.left+winRect.width / 2.0f, winRect.top + winRect.height / 2.0f);
+        winText.setPosition(windowWidth / 2.0f, (windowHeight - UIOffset) / 2.0f + UIOffset);
     }
     
     void Draw(sf::RenderWindow&window,GameState currentState){
@@ -311,6 +306,7 @@ class Game{
         if(!font.loadFromFile("resources/arial.ttf")) {
             cerr << "Error loading font" << endl;
             window.close();
+            exit(EXIT_FAILURE);
         }
         field.minePlace();
     }
@@ -345,7 +341,6 @@ class Game{
                         }else{
                             OpenNumber+=field.autoRelease(y, x);
                             cout << "OpenNumber: " << OpenNumber << endl; // デバッグ用
-                            field.Open(y,x);
                             if(SafePlace==OpenNumber){
                                 state= GameState::Win;
                                 field.revealAllTiles();
