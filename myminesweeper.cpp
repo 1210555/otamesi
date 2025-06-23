@@ -111,13 +111,6 @@ class Field{
         }
         return OpenCount;
     }
-    void revealAllTiles(){
-        for(int i=0;i<NUMrow;i++){
-            for(int j=0;j<NUMcol;j++){
-                open[i][j] = true; // 全てのタイルを開く
-            }
-        }
-    }
 };
 
 class Output{
@@ -156,7 +149,28 @@ class Output{
                 window.draw(tile);
                     //ゲームオーバー時の処理
                 if(currentState == GameState::GameOver){
-                    if(field.Mined(i,j)){
+                    if(!field.Mined(i,j)){
+                        int count = field.Count(i, j);
+                        if (count >= 0) { // 周囲の地雷数が1以上の場合は数字を表示
+                            sf::Text text;
+                            text.setFont(font); // 受け取ったfontを使用
+                            text.setString(to_string(count));
+                            text.setCharacterSize(24);
+                            //数字ごとに色変化
+                            if (count == 1){
+                                text.setFillColor(sf::Color::Blue);
+                            }else if (count == 2){
+                                text.setFillColor(sf::Color::Green);
+                            }else if (count >= 3){
+                                text.setFillColor(sf::Color::Red);
+                            }
+                            // 数字の位置をタイルの中央に調整 (UIOffsetを考慮)
+                            sf::FloatRect textBounds = text.getLocalBounds();
+                            text.setOrigin(textBounds.left + textBounds.width / 2.0f, textBounds.top + textBounds.height / 2.0f);
+                            text.setPosition(j * tileSize + tileSize / 2.0f, i * tileSize + tileSize / 2.0f + UIOffset);
+                            window.draw(text);
+                        }
+                    }else{
                         sprite.setTexture(textures["boom"]);
                         sf::Vector2u textureSize = textures["boom"].getSize(); // 元の画像サイズ
                         float scaleX = tileSize / static_cast<float>(textureSize.x);
@@ -164,12 +178,9 @@ class Output{
                         sprite.setScale(scaleX, scaleY);
                         sprite.setPosition(j * tileSize, i * tileSize + UIOffset);
                         window.draw(sprite);
-                        cout<< "Boom! You hit a mine at (" << i + 1 << ", " << j + 1 << ")." << endl; // デバッグ用
+                        //cout<< "Boom! You hit a mine at (" << i + 1 << ", " << j + 1 << ")." << endl; // デバッグ用
                     }
                 }else if(currentState == GameState::Win){
-                    if(!field.Mined(i,j)){
-                        int count = field.Count(i,j);
-                        if(count >= 0){
                             sprite.setTexture(textures["white"]);
                             sf::Vector2u textureSize = textures["white"].getSize(); // 元の画像サイズ
                             float scaleX = tileSize / static_cast<float>(textureSize.x);
@@ -177,8 +188,6 @@ class Output{
                             sprite.setScale(scaleX, scaleY);
                             sprite.setPosition(j * tileSize, i * tileSize + UIOffset);
                             window.draw(sprite);
-                        }
-                    }
                 }else{
                     if (flagged[i][j]) {
                     // フラグ表示
@@ -224,7 +233,7 @@ class Output{
 
 class GameUI{
     private:
-    sf::Font &Font;
+    //sf::Font &Font;
     sf::Text leftInstructionText;
     sf::Text rightInstructionText;
     sf::Text gameOverText;
@@ -234,31 +243,32 @@ class GameUI{
     int UIOffset; // UIのオフセット値
 
     public:
-    GameUI(sf::Font& gameFont,int windowWidth,int windowHeight,int offset):Font(gameFont),windowWidth(windowWidth),windowHeight(windowHeight),UIOffset(offset)
-    {
-        leftInstructionText.setFont(Font);
+    GameUI(int windowWidth,int windowHeight,int offset):windowWidth(windowWidth),windowHeight(windowHeight),UIOffset(offset){}
+    
+    void setFont(const sf::Font& loadedFont){
+        leftInstructionText.setFont(loadedFont);
         leftInstructionText.setString("Left Click: Open Tile");
         leftInstructionText.setCharacterSize(20);
         leftInstructionText.setFillColor(sf::Color::Blue);
         leftInstructionText.setPosition(10, 10);
 
-        rightInstructionText.setFont(Font);
+        rightInstructionText.setFont(loadedFont);
         rightInstructionText.setString("Right Click: Flag Tile");
         rightInstructionText.setCharacterSize(20);
         rightInstructionText.setFillColor(sf::Color::Blue);
         rightInstructionText.setPosition(10, 40);
 
-        gameOverText.setFont(Font);
+        gameOverText.setFont(loadedFont);
         gameOverText.setString("Game Over!");
-        gameOverText.setCharacterSize(48);
+        gameOverText.setCharacterSize(30);
         gameOverText.setFillColor(sf::Color::Red);
 
         sf::FloatRect goRect = gameOverText.getLocalBounds();
         cout<<"goRect.left is "<<goRect.left<<" , goRect.width is "<<goRect.width<<endl;
         gameOverText.setOrigin(goRect.width / 2.0f, goRect.top + goRect.height / 2.0f);
-        gameOverText.setPosition(windowWidth / 2.0f, (windowHeight - UIOffset) / 2.0f + UIOffset);
+        gameOverText.setPosition(windowWidth-1 / 2.0f, UIOffset/2);
 
-        winText.setFont(Font);
+        winText.setFont(loadedFont);
         winText.setString("You Win!");
         winText.setCharacterSize(48);
         winText.setFillColor(sf::Color::Green);
@@ -270,9 +280,10 @@ class GameUI{
     
     void Draw(sf::RenderWindow&window,GameState currentState){
 
-        window.draw(leftInstructionText);
-        window.draw(rightInstructionText);
-
+        if(currentState!=GameState::GameOver){
+            window.draw(leftInstructionText);
+            window.draw(rightInstructionText);
+        }
         if(currentState == GameState::GameOver){
             // ゲームオーバーテキスト描画
             window.draw(gameOverText);
@@ -301,13 +312,14 @@ class Game{
         state(GameState::Playing),
         field(),
         output(UI_AREA_HEIGHT),
-        gameUI(font, NUMcol * 50, NUMrow * 50 + UI_AREA_HEIGHT, UI_AREA_HEIGHT) // GameUIの初期化
+        gameUI(NUMcol * 50, NUMrow * 50 + UI_AREA_HEIGHT, UI_AREA_HEIGHT) // GameUIの初期化
     {
         if(!font.loadFromFile("resources/arial.ttf")) {
             cerr << "Error loading font" << endl;
             window.close();
             exit(EXIT_FAILURE);
         }
+        gameUI.setFont(font);
         field.minePlace();
     }
 
@@ -337,25 +349,22 @@ class Game{
                             continue;
                         }else if(field.Mined(y,x)){
                             state = GameState::GameOver;
-                            field.revealAllTiles();
+                            //field.revealAllTiles();
                         }else{
                             OpenNumber+=field.autoRelease(y, x);
-                            cout << "OpenNumber: " << OpenNumber << endl; // デバッグ用
+                            //cout << "OpenNumber: " << OpenNumber << endl; // デバッグ用
                             if(SafePlace==OpenNumber){
                                 state= GameState::Win;
-                                field.revealAllTiles();
+                                //field.revealAllTiles();
                             }
                         }
                     }
                 //右クリックの処理
                 }else if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right){
-                    cout<< "Flagged at: (" << x << ", " << y << ")" << endl;
+                    //cout<< "Flagged at: (" << x << ", " << y << ")" << endl;デバック用
                     if (x >= 0 && x < NUMcol && y >= 0 && y < NUMrow) {
                         if(!field.Opened(y,x)){ // まだ開いていないタイルに対してフラグを設定
                             field.Flag(y,x);
-                            if(!field.Flagged(y,x)){
-                                cout << "Flag removed at: (" << y + 1 << ", " << x + 1 << ")" << endl; // デバッグ用
-                            }
                         }
                     }
                 }
